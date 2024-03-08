@@ -78,6 +78,16 @@ func main() {
 	}
 }
 
+func printUsage() {
+	fmt.Println("Uso: vault <comando> <serviço>")
+	fmt.Println("Comandos disponíveis:")
+	fmt.Println("  get  <serviço>: Recupera a senha para o serviço especificado.")
+	fmt.Println("  set  <serviço>: Define uma nova senha para o serviço especificado.")
+	fmt.Println("  rm   <serviço>: Remove o serviço especificado.")
+	fmt.Println("  edit <serviço>: Edita o email e a senha para o serviço especificado.")
+	fmt.Println("  list: Lista todos os serviços salvos.")
+}
+
 func createVaultDirectory(homeDir string) error {
 	vaultDir := filepath.Join(homeDir, ".vault")
 	fmt.Println("Criando diretório:", vaultDir)
@@ -121,16 +131,6 @@ func loadPasswords(vault Vault, filePath string) {
 	}
 }
 
-func printUsage() {
-	fmt.Println("Uso: vault <comando> <serviço>")
-	fmt.Println("Comandos disponíveis:")
-	fmt.Println("  get  <serviço>: Recupera a senha para o serviço especificado.")
-	fmt.Println("  set  <serviço>: Define uma nova senha para o serviço especificado.")
-	fmt.Println("  rm   <serviço>: Remove o serviço especificado.")
-	fmt.Println("  edit <serviço>: Edita o email e a senha para o serviço especificado.")
-	fmt.Println("  list: Lista todos os serviços salvos.")
-}
-
 func getUserHomeDir() (string, error) {
 	usr, err := user.Current()
 	if err != nil {
@@ -140,17 +140,16 @@ func getUserHomeDir() (string, error) {
 }
 
 func retrievePassword(vault Vault, service string) {
-    if creds, ok := vault[service]; ok {
-        fmt.Println("Serviço:", service)
-        fmt.Println("Email:", creds["email"])
-        fmt.Println("Senha:", creds["password"])
-    } else {
-        fmt.Println("Serviço não encontrado.")
-    }
+	if creds, ok := vault[service]; ok {
+		fmt.Println("Serviço:", service)
+		fmt.Println("Email:", creds["email"])
+		fmt.Println("Senha:", creds["password"])
+	} else {
+		fmt.Println("Serviço não encontrado.")
+	}
 }
 
-
-func setPassword(vault Vault, service string, filePath string) {
+func setPassword(vault Vault, service, filePath string) {
 	homeDir, err := getUserHomeDir()
 	if err != nil {
 		fmt.Println("Erro ao obter diretório home:", err)
@@ -205,48 +204,36 @@ func savePasswords(vault Vault, filePath string) {
 	writer.Flush()
 }
 
-func listServices(vault Vault) {
-	if len(vault) == 0 {
-		fmt.Println("Nenhum serviço encontrado.")
-		return
+func editService(vault Vault, service, filePath string) {
+	if _, ok := vault[service]; !ok {
+		fmt.Println("Serviço não encontrado.")
+		os.Exit(1)
 	}
 
-	fmt.Println("Serviços disponíveis:")
-	for service := range vault {
-		fmt.Println("-", service)
+	fmt.Print("Novo email: ")
+	newEmail, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+	newEmail = strings.TrimSpace(newEmail)
+
+	fmt.Print("Nova senha: ")
+	newPassword, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+	newPassword = strings.TrimSpace(newPassword)
+
+	vault[service]["email"] = encrypt(newEmail)
+	vault[service]["password"] = encrypt(newPassword)
+
+	savePasswords(vault, filePath)
+	fmt.Println("Serviço editado com sucesso.")
+}
+
+func removeService(vault Vault, service, filePath string) {
+	if _, ok := vault[service]; !ok {
+		fmt.Println("Serviço não encontrado.")
+		os.Exit(1)
 	}
-}
 
-func editService(vault Vault, service string, filePath string) {
-    if _, ok := vault[service]; !ok {
-        fmt.Println("Serviço não encontrado.")
-        os.Exit(1)
-    }
-
-    fmt.Print("Novo email: ")
-    newEmail, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-    newEmail = strings.TrimSpace(newEmail)
-
-    fmt.Print("Nova senha: ")
-    newPassword, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-    newPassword = strings.TrimSpace(newPassword)
-
-    vault[service]["email"] = encrypt(newEmail)
-    vault[service]["password"] = encrypt(newPassword)
-
-    savePasswords(vault, filePath)
-    fmt.Println("Serviço editado com sucesso.")
-}
-
-func removeService(vault Vault, service string, filePath string) {
-    if _, ok := vault[service]; !ok {
-        fmt.Println("Serviço não encontrado.")
-        os.Exit(1)
-    }
-
-    delete(vault, service)
-    savePasswords(vault, filePath)
-    fmt.Println("Serviço removido com sucesso.")
+	delete(vault, service)
+	savePasswords(vault, filePath)
+	fmt.Println("Serviço removido com sucesso.")
 }
 
 func encrypt(data string) string {
@@ -280,4 +267,11 @@ func decrypt(data string) string {
 	stream := cipher.NewCTR(block, iv)
 	stream.XORKeyStream(ciphertext, ciphertext)
 	return string(ciphertext)
+}
+
+func listServices(vault Vault) {
+	fmt.Println("Serviços salvos:")
+	for service := range vault {
+		fmt.Println(" -", service)
+	}
 }

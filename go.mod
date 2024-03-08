@@ -1,3 +1,3 @@
-module simple-vault
+module tigerctl
 
 go 1.21
