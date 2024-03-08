@@ -24,14 +24,14 @@ func main() {
 
 	homeDir, err := getUserHomeDir()
 	if err != nil {
-		fmt.Println("Erro ao obter diretório home:", err)
+		fmt.Println("Error retrieving home directory:", err)
 		os.Exit(1)
 	}
 
 	vaultPath := filepath.Join(homeDir, passwordFile)
 	if _, err := os.Stat(vaultPath); os.IsNotExist(err) {
 		if err := createVaultDirectory(homeDir); err != nil {
-			fmt.Println("Erro ao criar diretório .vault:", err)
+			fmt.Println("Error creating .vault directory:", err)
 			os.Exit(1)
 		}
 	}
@@ -79,31 +79,31 @@ func main() {
 }
 
 func printUsage() {
-	fmt.Println("Uso: vault <comando> <serviço>")
-	fmt.Println("Comandos disponíveis:")
-	fmt.Println("  get  <serviço>: Recupera a senha para o serviço especificado.")
-	fmt.Println("  set  <serviço>: Define uma nova senha para o serviço especificado.")
-	fmt.Println("  rm   <serviço>: Remove o serviço especificado.")
-	fmt.Println("  edit <serviço>: Edita o email e a senha para o serviço especificado.")
-	fmt.Println("  list: Lista todos os serviços salvos.")
+	fmt.Println("Usage: tigerctl <command> <service>")
+	fmt.Println("Available commands:")
+	fmt.Println(" get  <service>: Retrieves the password for the specified service.")
+	fmt.Println(" set  <service>: Sets a new password for the specified service.")
+	fmt.Println(" rm   <service>: Removes the specified service.")
+	fmt.Println(" edit <service>: Edits the email and password for the specified service.")
+	fmt.Println(" list: Lists all saved services.")
 }
 
 func createVaultDirectory(homeDir string) error {
 	vaultDir := filepath.Join(homeDir, ".vault")
-	fmt.Println("Criando diretório:", vaultDir)
+	fmt.Println("Creating directory:", vaultDir)
 	if err := os.MkdirAll(vaultDir, 0700); err != nil {
 		return err
 	}
 
 	passwordFilePath := filepath.Join(vaultDir, "passwords.txt")
 	if _, err := os.Stat(passwordFilePath); os.IsNotExist(err) {
-		fmt.Println("Criando arquivo de senhas:", passwordFilePath)
+		fmt.Println("Creating password file:", passwordFilePath)
 		if _, err := os.Create(passwordFilePath); err != nil {
 			return err
 		}
 	}
 
-	fmt.Println("Diretório .vault criado.")
+	fmt.Println(".vault directory created.")
 	return nil
 }
 
@@ -141,29 +141,29 @@ func getUserHomeDir() (string, error) {
 
 func retrievePassword(vault Vault, service string) {
 	if creds, ok := vault[service]; ok {
-		fmt.Println("Serviço:", service)
+		fmt.Println("Service:", service)
 		fmt.Println("Email:", creds["email"])
-		fmt.Println("Senha:", creds["password"])
+		fmt.Println("Password:", creds["password"])
 	} else {
-		fmt.Println("Serviço não encontrado.")
+		fmt.Println("Service not found.")
 	}
 }
 
 func setPassword(vault Vault, service, filePath string) {
 	homeDir, err := getUserHomeDir()
 	if err != nil {
-		fmt.Println("Erro ao obter diretório home:", err)
+		fmt.Println("Error retrieving home directory:", err)
 		os.Exit(1)
 	}
 
 	vaultPath := filepath.Join(homeDir, passwordFile)
 	_, err = os.Stat(vaultPath)
 	if os.IsNotExist(err) {
-		fmt.Println("Arquivo de senhas não encontrado em", vaultPath)
-		fmt.Println("Certifique-se de que o diretório .vault e o arquivo passwords.txt foram criados corretamente.")
+		fmt.Println("Password file not found in", vaultPath)
+		fmt.Println("Make sure that the .vault directory and the passwords.txt file were created correctly.")
 		os.Exit(1)
 	} else if err != nil {
-		fmt.Println("Erro ao verificar o arquivo de senhas:", err)
+		fmt.Println("Error checking the password file:", err)
 		os.Exit(1)
 	}
 
@@ -171,7 +171,7 @@ func setPassword(vault Vault, service, filePath string) {
 	email, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 	email = strings.TrimSpace(email)
 
-	fmt.Print("Senha: ")
+	fmt.Print("Password: ")
 	password, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 	password = strings.TrimSpace(password)
 
@@ -187,7 +187,7 @@ func setPassword(vault Vault, service, filePath string) {
 func savePasswords(vault Vault, filePath string) {
 	file, err := os.Create(filePath)
 	if err != nil {
-		fmt.Println("Erro ao criar arquivo de senhas:", err)
+		fmt.Println("Error creating password file.", err)
 		return
 	}
 	defer file.Close()
@@ -196,7 +196,7 @@ func savePasswords(vault Vault, filePath string) {
 	for service, creds := range vault {
 		_, err := fmt.Fprintf(writer, "%s:%s:%s\n", service, creds["email"], creds["password"])
 		if err != nil {
-			fmt.Println("Erro ao escrever no arquivo de senhas:", err)
+			fmt.Println("Error writing to the password file:", err)
 			return
 		}
 	}
@@ -206,15 +206,15 @@ func savePasswords(vault Vault, filePath string) {
 
 func editService(vault Vault, service, filePath string) {
 	if _, ok := vault[service]; !ok {
-		fmt.Println("Serviço não encontrado.")
+		fmt.Println("Sevice not found.")
 		os.Exit(1)
 	}
 
-	fmt.Print("Novo email: ")
+	fmt.Print("New email: ")
 	newEmail, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 	newEmail = strings.TrimSpace(newEmail)
 
-	fmt.Print("Nova senha: ")
+	fmt.Print("New password: ")
 	newPassword, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 	newPassword = strings.TrimSpace(newPassword)
 
@@ -222,12 +222,12 @@ func editService(vault Vault, service, filePath string) {
 	vault[service]["password"] = encrypt(newPassword)
 
 	savePasswords(vault, filePath)
-	fmt.Println("Serviço editado com sucesso.")
+	fmt.Println("Service edited successfully.")
 }
 
 func removeService(vault Vault, service, filePath string) {
 	if _, ok := vault[service]; !ok {
-		fmt.Println("Serviço não encontrado.")
+		fmt.Println("Sevice not found.")
 		os.Exit(1)
 	}
 
@@ -239,7 +239,7 @@ func removeService(vault Vault, service, filePath string) {
 func encrypt(data string) string {
 	key := []byte(aesKey)
 	if len(key) != 16 && len(key) != 24 && len(key) != 32 {
-		panic("A chave AES deve ter 16, 24 ou 32 bytes")
+		panic("The AES key must be 16, 24, or 32 bytes.")
 	}
 
 	block, err := aes.NewCipher(key)
@@ -270,7 +270,7 @@ func decrypt(data string) string {
 }
 
 func listServices(vault Vault) {
-	fmt.Println("Serviços salvos:")
+	fmt.Println("Saved services:")
 	for service := range vault {
 		fmt.Println(" -", service)
 	}
