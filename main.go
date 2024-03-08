@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-const passwordFile = ".vault/passwords.txt"
+const passwordFile = ".tigerctl/passwords.txt"
 const aesKey = "3cd58bef99bce87c7afef7f0061033da"
 
 type Vault map[string]map[string]string
@@ -89,7 +89,7 @@ func printUsage() {
 }
 
 func createVaultDirectory(homeDir string) error {
-	vaultDir := filepath.Join(homeDir, ".vault")
+	vaultDir := filepath.Join(homeDir, ".tigerctl")
 	fmt.Println("Creating directory:", vaultDir)
 	if err := os.MkdirAll(vaultDir, 0700); err != nil {
 		return err
@@ -103,7 +103,7 @@ func createVaultDirectory(homeDir string) error {
 		}
 	}
 
-	fmt.Println(".vault directory created.")
+	fmt.Println(".tigertcl directory created.")
 	return nil
 }
 
