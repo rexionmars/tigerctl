@@ -38,21 +38,42 @@ func main() {
 
 	loadPasswords(vault, vaultPath)
 
-	if len(os.Args) < 3 {
-		fmt.Println("Uso: vault <comando> <serviço>")
+	if len(os.Args) < 2 {
+		printUsage()
 		os.Exit(1)
 	}
 
 	command := os.Args[1]
-	service := os.Args[2]
-
 	switch command {
 	case "get":
-		retrievePassword(vault, service)
+		if len(os.Args) < 3 {
+			printUsage()
+			os.Exit(1)
+		}
+		retrievePassword(vault, os.Args[2])
 	case "set":
-		setPassword(vault, service, vaultPath)
+		if len(os.Args) < 3 {
+			printUsage()
+			os.Exit(1)
+		}
+		setPassword(vault, os.Args[2], vaultPath)
+	case "edit":
+		if len(os.Args) < 3 {
+			printUsage()
+			os.Exit(1)
+		}
+		editService(vault, os.Args[2], vaultPath)
+	case "rm":
+		if len(os.Args) < 3 {
+			printUsage()
+			os.Exit(1)
+		}
+		removeService(vault, os.Args[2], vaultPath)
+	case "list":
+		listServices(vault)
 	default:
 		fmt.Println("Comando não reconhecido.")
+		printUsage()
 		os.Exit(1)
 	}
 }
@@ -98,6 +119,16 @@ func loadPasswords(vault Vault, filePath string) {
 		vault[service]["email"] = email
 		vault[service]["password"] = password
 	}
+}
+
+func printUsage() {
+	fmt.Println("Uso: vault <comando> <serviço>")
+	fmt.Println("Comandos disponíveis:")
+	fmt.Println("  get  <serviço>: Recupera a senha para o serviço especificado.")
+	fmt.Println("  set  <serviço>: Define uma nova senha para o serviço especificado.")
+	fmt.Println("  rm   <serviço>: Remove o serviço especificado.")
+	fmt.Println("  edit <serviço>: Edita o email e a senha para o serviço especificado.")
+	fmt.Println("  list: Lista todos os serviços salvos.")
 }
 
 func getUserHomeDir() (string, error) {
@@ -172,6 +203,50 @@ func savePasswords(vault Vault, filePath string) {
 	}
 
 	writer.Flush()
+}
+
+func listServices(vault Vault) {
+	if len(vault) == 0 {
+		fmt.Println("Nenhum serviço encontrado.")
+		return
+	}
+
+	fmt.Println("Serviços disponíveis:")
+	for service := range vault {
+		fmt.Println("-", service)
+	}
+}
+
+func editService(vault Vault, service string, filePath string) {
+    if _, ok := vault[service]; !ok {
+        fmt.Println("Serviço não encontrado.")
+        os.Exit(1)
+    }
+
+    fmt.Print("Novo email: ")
+    newEmail, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+    newEmail = strings.TrimSpace(newEmail)
+
+    fmt.Print("Nova senha: ")
+    newPassword, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+    newPassword = strings.TrimSpace(newPassword)
+
+    vault[service]["email"] = encrypt(newEmail)
+    vault[service]["password"] = encrypt(newPassword)
+
+    savePasswords(vault, filePath)
+    fmt.Println("Serviço editado com sucesso.")
+}
+
+func removeService(vault Vault, service string, filePath string) {
+    if _, ok := vault[service]; !ok {
+        fmt.Println("Serviço não encontrado.")
+        os.Exit(1)
+    }
+
+    delete(vault, service)
+    savePasswords(vault, filePath)
+    fmt.Println("Serviço removido com sucesso.")
 }
 
 func encrypt(data string) string {
