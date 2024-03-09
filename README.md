@@ -19,6 +19,8 @@ git clone https://github.com/rexionmars/tigerctl
 cd tigerctl && go build
 sudo cp tigerctl /bin
 ```
+Or view release lists:<br>
+https://github.com/rexionmars/tigerctl/releases/tag/Release
 
 ## Usage
 ```sh
