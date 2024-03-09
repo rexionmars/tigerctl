@@ -71,6 +71,8 @@ func main() {
 		removeService(vault, os.Args[2], vaultPath)
 	case "list":
 		listServices(vault)
+	case "backup":
+		backupPasswords(vault)
 	default:
 		fmt.Println("Comando não reconhecido.")
 		printUsage()
@@ -225,6 +227,27 @@ func editService(vault Vault, service, filePath string) {
 	fmt.Println("Service edited successfully.")
 }
 
+func backupPasswords(vault Vault) {
+	// Criação do arquivo de backup
+	backupFile, err := os.Create("passwords_backup.txt")
+	if err != nil {
+		fmt.Println("Erro ao criar arquivo de backup:", err)
+		return
+	}
+	defer backupFile.Close()
+
+	// Escrita das informações de cada serviço no arquivo de backup
+	for service, creds := range vault {
+		_, err := fmt.Fprintf(backupFile, "Service: %s\nEmail: %s\nPassword: %s\n\n", service, creds["email"], creds["password"])
+		if err != nil {
+			fmt.Println("Erro ao escrever no arquivo de backup:", err)
+			return
+		}
+	}
+
+	fmt.Println("Backup das senhas criado com sucesso em passwords_backup.txt")
+}
+
 func removeService(vault Vault, service, filePath string) {
 	if _, ok := vault[service]; !ok {
 		fmt.Println("Sevice not found.")
@@ -261,7 +284,13 @@ func encrypt(data string) string {
 
 func decrypt(data string) string {
 	ciphertext, _ := base64.URLEncoding.DecodeString(data)
-	block, _ := aes.NewCipher([]byte(aesKey))
+	if len(ciphertext) < aes.BlockSize {
+		return "" // Retornar uma string vazia se os dados forem muito curtos
+	}
+	block, err := aes.NewCipher([]byte(aesKey))
+	if err != nil {
+		panic(err)
+	}
 	iv := ciphertext[:aes.BlockSize]
 	ciphertext = ciphertext[aes.BlockSize:]
 	stream := cipher.NewCTR(block, iv)
